@@ -1,0 +1,116 @@
+// Asset Map (Read-Only)
+// Edit assets in the Media tab.
+// Use these IDs alongside lib to reference assets in your code:
+//
+// Example: lib.getAsset["player_sprite"]
+
+const assets = {
+  "world_map_background": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/world_map_background_d84163c8-f712-49ac-bec8-06b019566376.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  },
+  "city_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/city_icon_afbb8fd9-b1d8-42bc-8e00-14adaada57c0.webp",
+    "type": "image",
+    "aspect_ratio": [
+      748,
+      670
+    ]
+  },
+  "defense_post_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/defense_post_icon_5e3a0cb6-342d-4c37-b242-5379cc993aaf.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  },
+  "troop_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/troop_icon_b2a1d1bd-9749-41e0-a1c2-c96be0e12af9.webp",
+    "type": "image",
+    "aspect_ratio": [
+      1024,
+      1024
+    ]
+  },
+  "attack_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/attack_icon_1ec2d742-f365-4beb-808d-8030415d04c1.webp",
+    "type": "image",
+    "aspect_ratio": [
+      662,
+      678
+    ]
+  },
+  "build_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/build_icon_4437182b-0c08-49b0-8c91-9d6af5d890e5.webp",
+    "type": "image",
+    "aspect_ratio": [
+      849,
+      844
+    ]
+  },
+  "shield_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/shield_icon_c2fff46b-8b6e-47c3-b62c-4a32d51f14c1.webp",
+    "type": "image",
+    "aspect_ratio": [
+      503,
+      705
+    ]
+  },
+  "handshake_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/handshake_icon_85e1d2ac-1ade-4250-838c-be315e219209.webp",
+    "type": "image",
+    "aspect_ratio": [
+      754,
+      459
+    ]
+  },
+  "arrow_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/arrow_icon_16d00499-6bd8-4265-ba24-5010158d648d.webp",
+    "type": "image",
+    "aspect_ratio": [
+      770,
+      416
+    ]
+  },
+  "cancel_icon": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/images/cancel_icon_6c72ed50-6ad7-441a-8586-22b9f5e93d59.webp",
+    "type": "image",
+    "aspect_ratio": [
+      516,
+      529
+    ]
+  },
+  "background_music": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/background_music_f7b5dccf-2b4b-4df7-9026-145f2562b7a6.mp3",
+    "type": "audio"
+  },
+  "attack_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/attack_sound_479d9452-95f6-4b34-83e7-0ed8da4d5e38.mp3",
+    "type": "audio"
+  },
+  "build_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/build_sound_3378c634-2e02-49f6-9c5f-788993ddb194.mp3",
+    "type": "audio"
+  },
+  "victory_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/victory_sound_24bdfaa0-96fd-4a8a-8c68-570b0ec5e001.mp3",
+    "type": "audio"
+  },
+  "defeat_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/defeat_sound_db70455b-63ce-4000-aba2-957d9375f85b.mp3",
+    "type": "audio"
+  },
+  "alliance_formed_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/alliance_formed_sound_32a956af-742c-4425-8022-e4def50c9f83.mp3",
+    "type": "audio"
+  },
+  "ui_click_sound": {
+    "url": "https://d2oir5eh8rty2e.cloudfront.net/assets/sounds/effect/ui_click_sound_a7738559-60e7-4ff1-8510-2ca8ff4eaf20.mp3",
+    "type": "audio"
+  }
+};

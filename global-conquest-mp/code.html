@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Global Conquest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <style>
+        :root {
+            --player-color: #2196F3;
+            --enemy1-color: #F44336;
+            --enemy2-color: #FFC107;
+            --enemy3-color: #4CAF50;
+            --enemy4-color: #9C27B0;
+            --neutral-color: #BDBDBD;
+            --ui-bg: #263238;
+            --ui-accent: #FFD700;
+            --text-primary: #FFFFFF;
+            --text-secondary: #E0E0E0;
+            --ocean-color: #1565C0;
+            --transition-fast: 150ms;
+            --ease-out: cubic-bezier(0.0, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Inter', sans-serif;
+            background: #1a2a35;
+        }
+
+        /* ── SCREENS ──────────────────────────────────────────────── */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 24px;
+            z-index: 500;
+            background: #1a2a35;
+        }
+        .screen.hidden { display: none; }
+
+        .screen-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(32px, 6vw, 56px);
+            color: var(--ui-accent);
+            letter-spacing: 2px;
+            text-align: center;
+            margin: 0;
+        }
+        .screen-sub {
+            font-size: 16px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(38,50,56,0.95);
+            border-radius: 16px;
+            padding: 24px 28px;
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .card-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 20px;
+            color: var(--ui-accent);
+            margin: 0 0 4px;
+        }
+
+        input[type="text"] {
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 18px;
+            color: white;
+            width: 100%;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.15s;
+        }
+        input[type="text"]:focus { border-color: var(--ui-accent); }
+        input[type="text"]::placeholder { color: rgba(255,255,255,0.35); }
+        input[type="text"].code-input {
+            font-family: 'Oswald', sans-serif;
+            font-size: 28px;
+            letter-spacing: 6px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.12s, opacity 0.12s;
+            width: 100%;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-primary { background: var(--player-color); color: white; }
+        .btn-primary:hover { background: #1976D2; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+        .btn-danger { background: var(--enemy1-color); color: white; }
+        .btn-sm {
+            padding: 10px 18px;
+            font-size: 16px;
+            width: auto;
+        }
+
+        .error-msg {
+            color: #FF6B6B;
+            font-size: 14px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        /* ── LOBBY SCREEN ─────────────────────────────────────────── */
+        #lobby-screen .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .player-slot {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+        }
+        .player-dot {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .player-slot-name {
+            flex: 1;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .player-slot-badge {
+            font-size: 12px;
+            color: var(--ui-accent);
+            font-family: 'Oswald', sans-serif;
+        }
+        .player-slot.empty .player-slot-name { color: rgba(255,255,255,0.3); font-style: italic; }
+
+        .room-code-display {
+            font-family: 'Oswald', sans-serif;
+            font-size: 40px;
+            letter-spacing: 8px;
+            color: var(--ui-accent);
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .room-code-hint { font-size: 13px; color: var(--text-secondary); text-align: center; }
+
+        .countdown-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 600;
+        }
+        .countdown-overlay.hidden { display: none; }
+        .countdown-number {
+            font-family: 'Oswald', sans-serif;
+            font-size: 120px;
+            color: var(--ui-accent);
+            line-height: 1;
+        }
+        .countdown-label {
+            font-size: 22px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* ── LOADING ──────────────────────────────────────────────── */
+        #loading-screen {
+            z-index: 999;
+        }
+        #loading-bar-wrap {
+            width: 280px; height: 10px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 5px; overflow: hidden;
+        }
+        #loading-bar {
+            height: 100%; width: 0%;
+            background: var(--player-color);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        /* ── GAME WORLD ───────────────────────────────────────────── */
+        #game-world {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        /* ── GAME UI ──────────────────────────────────────────────── */
+        .ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .ui-overlay > * { pointer-events: auto; }
+
+        .top-bar {
+            position: absolute;
+            top: 12px; left: 12px; right: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .resource-panel {
+            background: rgba(38,50,56,0.92);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+        .timer-panel {
+            background: rgba(38,50,56,0.92);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 26px;
+            color: var(--ui-accent);
+            text-align: center;
+        }
+        .control-panel {
+            background: rgba(38,50,56,0.92);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: flex-end;
+        }
+        .control-label { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; }
+        .control-value { font-family: 'Oswald', sans-serif; font-size: 22px; color: var(--ui-accent); }
+
+        /* Players strip */
+        .players-strip {
+            position: absolute;
+            top: 100px; left: 12px; right: 12px;
+            display: flex;
+            gap: 6px;
+            pointer-events: none;
+        }
+        .player-chip {
+            background: rgba(38,50,56,0.88);
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-left: 3px solid transparent;
+        }
+        .player-chip.disconnected { opacity: 0.4; }
+
+        .bottom-bar {
+            position: absolute;
+            bottom: 12px; left: 12px; right: 12px;
+            display: flex;
+            justify-content: space-around;
+            gap: 6px;
+        }
+        .bottom-btn {
+            background: rgba(38,50,56,0.92);
+            border: none;
+            border-radius: 14px;
+            padding: 0;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.12s;
+            min-width: 80px;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bottom-btn:hover { background: rgba(38,50,56,1); }
+        .bottom-btn:active { transform: scale(0.95); }
+        .bottom-btn.active { background: var(--player-color); }
+
+        /* Radial menu */
+        .radial-menu {
+            position: absolute;
+            width: 280px; height: 280px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        .radial-menu.visible { display: block; }
+        .radial-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 72px; height: 72px;
+            background: rgba(38,50,56,0.97);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 22px;
+            color: var(--text-primary);
+            border: 3px solid var(--ui-accent);
+        }
+        .radial-btn {
+            position: absolute;
+            width: 66px; height: 66px;
+            background: rgba(38,50,56,0.97);
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.12s;
+        }
+        .radial-btn:hover { background: var(--player-color); border-color: var(--player-color); transform: scale(1.1); }
+        .radial-btn:active { transform: scale(0.95); }
+        .radial-btn.disabled { opacity: 0.35; pointer-events: none; }
+        .radial-btn img { width: 32px; height: 32px; object-fit: contain; }
+
+        /* Tooltip */
+        .territory-tooltip {
+            position: absolute;
+            background: rgba(38,50,56,0.97);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 50;
+            min-width: 140px;
+            pointer-events: none;
+        }
+        .territory-tooltip.visible { display: flex; }
+        .tooltip-name { font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--text-primary); }
+        .tooltip-owner { font-size: 12px; color: var(--text-secondary); }
+        .tooltip-stats { display: flex; gap: 12px; margin-top: 2px; }
+        .tooltip-stat { font-size: 13px; color: var(--text-primary); }
+
+        /* Event panel */
+        .event-panel {
+            position: absolute;
+            top: 96px; left: 12px;
+            width: 260px; max-height: 360px;
+            background: rgba(38,50,56,0.97);
+            border-radius: 12px;
+            padding: 14px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+        }
+        .event-panel.visible { display: flex; }
+        .event-panel-title { font-family: 'Oswald', sans-serif; font-size: 18px; color: var(--ui-accent); }
+        .event-item {
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .event-item.attack { border-left: 3px solid var(--enemy1-color); }
+        .event-item.alliance { border-left: 3px solid var(--enemy3-color); }
+        .event-item.build { border-left: 3px solid var(--player-color); }
+
+        /* Game over overlay */
+        .game-over-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.82);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            gap: 16px;
+        }
+        .game-over-overlay.visible { display: flex; }
+        .game-over-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(48px, 8vw, 72px);
+            color: var(--ui-accent);
+            text-transform: uppercase;
+            margin: 0;
+        }
+        .game-over-title.defeat { color: var(--enemy1-color); }
+        .game-over-subtitle { font-size: 20px; color: var(--text-secondary); margin: 0; }
+        .game-over-scores {
+            background: rgba(38,50,56,0.95);
+            border-radius: 14px;
+            padding: 20px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 280px;
+        }
+        .score-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .score-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+        .score-name { flex: 1; }
+        .score-pct { font-family: 'Oswald', sans-serif; font-size: 20px; color: var(--ui-accent); }
+
+        .restart-btn {
+            background: var(--player-color);
+            border: none;
+            border-radius: 14px;
+            padding: 18px 56px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 26px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.12s, background 0.12s;
+        }
+        .restart-btn:hover { background: #1976D2; transform: scale(1.04); }
+
+        /* Disconnected banner */
+        .dc-banner {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(38,50,56,0.97);
+            border-radius: 14px;
+            padding: 28px 36px;
+            text-align: center;
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .dc-banner.visible { display: flex; }
+        .dc-banner-title { font-family: 'Oswald', sans-serif; font-size: 28px; color: #FF6B6B; }
+        .dc-banner-text { font-size: 15px; color: var(--text-secondary); }
+
+        /* "Not your turn" dimmer for non-host */
+        .spectator-hint {
+            position: absolute;
+            bottom: 76px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(38,50,56,0.88);
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ LOADING SCREEN ══════════════════════════════════════════════════ -->
+<div id="loading-screen" class="screen">
+    <h1 class="screen-title">GLOBAL CONQUEST</h1>
+    <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+    <p id="loading-text" class="screen-sub">Loading assets…</p>
+</div>
+
+<!-- ══ MAIN MENU ═══════════════════════════════════════════════════════ -->
+<div id="menu-screen" class="screen hidden">
+    <h1 class="screen-title">GLOBAL CONQUEST</h1>
+    <p class="screen-sub">Multiplayer strategy — up to 4 players</p>
+
+    <div class="card">
+        <div class="card-title">Your Name</div>
+        <input type="text" id="player-name-input" placeholder="Enter your name…" maxlength="16">
+    </div>
+
+    <div class="card">
+        <div class="card-title">🌐 Create a Room</div>
+        <button class="btn btn-primary" id="create-room-btn">Create Room</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🔗 Join by Code</div>
+        <input type="text" id="room-code-input" class="code-input" placeholder="XXXXX" maxlength="5">
+        <button class="btn btn-secondary" id="join-room-btn">Join Room</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">⚡ Quick Match</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0">Join any open game instantly</p>
+        <button class="btn btn-secondary" id="quick-match-btn">Find Game</button>
+    </div>
+
+    <p id="menu-error" class="error-msg"></p>
+</div>
+
+<!-- ══ LOBBY SCREEN ════════════════════════════════════════════════════ -->
+<div id="lobby-screen" class="screen hidden">
+    <h1 class="screen-title">LOBBY</h1>
+
+    <div class="card">
+        <div class="card-title">Room Code</div>
+        <div class="room-code-display" id="lobby-room-code">-----</div>
+        <p class="room-code-hint">Share this code with friends, or use the invite link below</p>
+        <button class="btn btn-secondary btn-sm" id="copy-link-btn" style="width:auto;align-self:center">📋 Copy Invite Link</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Players (<span id="lobby-count">0</span>/4)</div>
+        <div class="player-list" id="lobby-player-list"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;width:100%;max-width:420px;">
+        <button class="btn btn-danger" id="leave-lobby-btn" style="width:auto;padding:14px 20px">Leave</button>
+        <button class="btn btn-primary" id="start-game-btn" style="flex:1" disabled>
+            Start Game
+        </button>
+    </div>
+    <p id="lobby-error" class="error-msg"></p>
+    <p id="lobby-hint" class="screen-sub" style="font-size:13px">Waiting for players… (need at least 2)</p>
+
+    <!-- Countdown overlay -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+        <div class="countdown-number" id="countdown-number">5</div>
+        <div class="countdown-label">Game starting…</div>
+        <button class="btn btn-danger btn-sm" id="cancel-start-btn" style="margin-top:20px;width:auto">Cancel</button>
+    </div>
+</div>
+
+<!-- ══ GAME WORLD ══════════════════════════════════════════════════════ -->
+<div id="game-world" style="display:none">
+    <canvas id="game-canvas"></canvas>
+
+    <div class="ui-overlay">
+        <div class="top-bar">
+            <div class="resource-panel">
+                <div class="resource-item">🏰 <span id="territory-count">0</span></div>
+                <div class="resource-item">⚔️ <span id="troop-count">0</span></div>
+                <div class="resource-item">💰 <span id="gold-count">0</span></div>
+            </div>
+            <div class="timer-panel" id="game-timer">15:00</div>
+            <div class="control-panel">
+                <div class="control-label">Map Control</div>
+                <div class="control-value" id="map-control">0%</div>
+            </div>
+        </div>
+
+        <div class="players-strip" id="players-strip"></div>
+
+        <div class="bottom-bar">
+            <button class="bottom-btn" id="events-btn">Events</button>
+            <button class="bottom-btn" id="pause-btn">Pause</button>
+            <button class="bottom-btn" id="restart-btn">Restart</button>
+        </div>
+
+        <!-- Radial menu -->
+        <div class="radial-menu" id="radial-menu">
+            <div class="radial-center" id="radial-troops">0</div>
+            <div class="radial-btn" id="radial-attack" style="top:4px;left:50%;transform:translateX(-50%)"><img id="attack-icon-img" alt="⚔️"></div>
+            <div class="radial-btn" id="radial-build"  style="top:50%;right:4px;transform:translateY(-50%)"><img id="build-icon-img" alt="🏙️"></div>
+            <div class="radial-btn" id="radial-defense" style="bottom:4px;left:50%;transform:translateX(-50%)"><img id="shield-icon-img" alt="🛡️"></div>
+            <div class="radial-btn" id="radial-alliance" style="top:50%;left:4px;transform:translateY(-50%)"><img id="handshake-icon-img" alt="🤝"></div>
+            <div class="radial-btn" id="radial-send" style="top:20%;right:20px"><img id="arrow-icon-img" alt="→"></div>
+            <div class="radial-btn" id="radial-cancel" style="bottom:20%;left:20px"><img id="cancel-icon-img" alt="✕"></div>
+        </div>
+
+        <!-- Event panel -->
+        <div class="event-panel" id="event-panel">
+            <div class="event-panel-title">Events</div>
+            <div id="event-list"></div>
+        </div>
+
+        <!-- Tooltip -->
+        <div class="territory-tooltip" id="territory-tooltip">
+            <div class="tooltip-name" id="tooltip-name">Territory</div>
+            <div class="tooltip-owner" id="tooltip-owner">Owner: Neutral</div>
+            <div class="tooltip-stats">
+                <div class="tooltip-stat">⚔️ <span id="tooltip-troops">0</span></div>
+                <div class="tooltip-stat">🏛️ <span id="tooltip-buildings">0</span></div>
+            </div>
+        </div>
+
+        <!-- Game over -->
+        <div class="game-over-overlay" id="game-over-overlay">
+            <div class="game-over-title" id="game-over-title">VICTORY!</div>
+            <div class="game-over-subtitle" id="game-over-subtitle"></div>
+            <div class="game-over-scores" id="game-over-scores"></div>
+            <button class="restart-btn" id="gameover-restart-btn">Play Again</button>
+        </div>
+
+        <!-- Disconnected banner -->
+        <div class="dc-banner" id="dc-banner">
+            <div class="dc-banner-title">Player Disconnected</div>
+            <div class="dc-banner-text" id="dc-banner-text">A player left. Their territories are now AI-controlled.</div>
+        </div>
+
+        <!-- Spectator hint for non-host players -->
+        <div class="spectator-hint" id="spectator-hint">
+            You are Player <span id="spectator-player-num"></span> — tap your territories to act
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+ * GLOBAL CONQUEST — Multiplayer Client
+ *
+ * Multiplayer model:
+ *   HOST   → runs the authoritative simulation, broadcasts game_state ~10/s
+ *   CLIENT → renders received state, sends player_action messages to host via server
+ *
+ * Both host and clients can issue actions for their own player color.
+ * The host processes all actions (its own immediately, others via WS messages).
+ */
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG — set WS_SERVER to your deployed Railway/Render URL
+// ═══════════════════════════════════════════════════════════════
+const WS_SERVER = 'wss://YOUR_SERVER.up.railway.app'; // ← replace after deploying server.js
+
+async function run(mode) {
+    const gameWorld = document.getElementById('game-world');
+    const canvas    = document.getElementById('game-canvas');
+    const ctx       = canvas.getContext('2d');
+
+    // ── CrazyGames SDK ───────────────────────────────────────────
+    let crazySdk = null;
+    try {
+        if (window.CrazyGames?.SDK) {
+            crazySdk = window.CrazyGames.SDK;
+            await crazySdk.init();
+        }
+    } catch(e) {}
+
+    function cgGameplayStart() { try { crazySdk?.game.gameplayStart(); } catch(e) {} }
+    function cgGameplayStop()  { try { crazySdk?.game.gameplayStop();  } catch(e) {} }
+    async function cgMidgameAd() {
+        if (!crazySdk) return;
+        try { cgGameplayStop(); await crazySdk.ad.requestAd('midgame'); cgGameplayStart(); } catch(e) {}
+    }
+
+    // CrazyGames invite link support
+    function getInviteLink(roomCode) {
+        try {
+            if (crazySdk?.game) {
+                return crazySdk.game.getInviteLink({ roomCode });
+            }
+        } catch(e) {}
+        return `${location.href.split('?')[0]}?room=${roomCode}`;
+    }
+
+    // Check if launched via invite link (instant multiplayer)
+    function getInviteRoomCode() {
+        try {
+            if (crazySdk?.game?.isInstantMultiplayer) {
+                return new URLSearchParams(location.search).get('roomCode') ||
+                       new URLSearchParams(location.search).get('room');
+            }
+        } catch(e) {}
+        return new URLSearchParams(location.search).get('room');
+    }
+
+    // ── Constants ────────────────────────────────────────────────
+    const PLAYER_COLORS = ['#2196F3','#F44336','#FFC107','#4CAF50','#BDBDBD'];
+    const COLOR_NAMES   = ['Blue','Red','Yellow','Green','Neutral'];
+
+    // ── Asset cache ──────────────────────────────────────────────
+    const assetCache = { images: {}, audio: {} };
+    const audioBuffers = {};
+    let audioContext = null, bgMusicSrc = null;
+
+    function initAudio() {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        return audioContext;
+    }
+    async function decodeAllAudio() {
+        if (!audioContext) return;
+        for (const [id, buf] of Object.entries(audioBuffers)) {
+            if (assetCache.audio[id]) continue;
+            try {
+                const decoded = await audioContext.decodeAudioData(buf.slice(0));
+                const info = lib.getAsset(id);
+                assetCache.audio[id] = { buffer: decoded, loop: info?.loop === 'true' };
+            } catch(e) {}
+        }
+    }
+    async function loadImage(id) {
+        const info = lib.getAsset(id);
+        if (!info || info.type !== 'image') return;
+        return new Promise(res => {
+            const img = new Image(); img.crossOrigin = 'anonymous';
+            img.onload = () => { assetCache.images[id] = img; res(img); };
+            img.onerror = () => res(null);
+            img.src = info.url;
+        });
+    }
+    async function loadAudio(id) {
+        const info = lib.getAsset(id);
+        if (!info || info.type !== 'audio') return;
+        try {
+            const r = await fetch(info.url);
+            audioBuffers[id] = await r.arrayBuffer();
+        } catch(e) {}
+    }
+    function playSound(id, vol = 0.5) {
+        if (!audioContext || !assetCache.audio[id]) return null;
+        const src = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
+        src.buffer = assetCache.audio[id].buffer;
+        src.loop = assetCache.audio[id].loop || false;
+        gain.gain.value = vol;
+        src.connect(gain); gain.connect(audioContext.destination);
+        src.start(0);
+        return { source: src, gainNode: gain };
+    }
+    function playBgMusic() {
+        if (bgMusicSrc) { try { bgMusicSrc.source.stop(); } catch(e) {} }
+        bgMusicSrc = playSound('background_music', 0.3);
+    }
+    function stopBgMusic() {
+        if (bgMusicSrc) { try { bgMusicSrc.source.stop(); } catch(e) {} bgMusicSrc = null; }
+    }
+
+    function setLoadProgress(pct, txt) {
+        const bar = document.getElementById('loading-bar');
+        const lbl = document.getElementById('loading-text');
+        if (bar) bar.style.width = pct + '%';
+        if (lbl && txt) lbl.textContent = txt;
+    }
+
+    async function preloadAssets() {
+        const imgs = ['world_map_background','city_icon','defense_post_icon','troop_icon',
+                      'attack_icon','build_icon','shield_icon','handshake_icon','arrow_icon','cancel_icon'];
+        const auds = ['background_music','attack_sound','build_sound','victory_sound',
+                      'defeat_sound','alliance_formed_sound','ui_click_sound'];
+        const total = imgs.length + auds.length;
+        let done = 0;
+        const tick = () => { done++; setLoadProgress(Math.round(done/total*100), `Loading… (${done}/${total})`); };
+        await Promise.all([
+            ...imgs.map(id => loadImage(id).then(r => { tick(); return r; })),
+            ...auds.map(id => loadAudio(id).then(r => { tick(); return r; }))
+        ]);
+        // Set radial icons
+        const icons = {'attack-icon-img':'attack_icon','build-icon-img':'build_icon',
+            'shield-icon-img':'shield_icon','handshake-icon-img':'handshake_icon',
+            'arrow-icon-img':'arrow_icon','cancel-icon-img':'cancel_icon'};
+        for (const [el, id] of Object.entries(icons)) {
+            const e = document.getElementById(el);
+            if (e && assetCache.images[id]) e.src = assetCache.images[id].src;
+        }
+    }
+
+    // ── Canvas ───────────────────────────────────────────────────
+    function resizeCanvas() {
+        canvas.width  = gameWorld.clientWidth;
+        canvas.height = gameWorld.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // ── WebSocket connection ──────────────────────────────────────
+    let ws = null;
+    let myPlayerId   = null;
+    let myColorIndex = 0;
+    let isHost       = false;
+    let currentRoom  = null;
+    let playerName   = 'Player';
+    let pingInterval = null;
+
+    function connectWS() {
+        return new Promise((resolve, reject) => {
+            ws = new WebSocket(WS_SERVER);
+            ws.onopen = () => {
+                pingInterval = setInterval(() => { wsSend({ type: 'ping' }); }, 20000);
+                resolve();
+            };
+            ws.onerror = () => reject(new Error('Cannot connect to game server'));
+            ws.onclose = () => {
+                clearInterval(pingInterval);
+                onWsClose();
+            };
+            ws.onmessage = (e) => {
+                try { handleServerMsg(JSON.parse(e.data)); } catch(err) {}
+            };
+        });
+    }
+
+    function wsSend(msg) {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+    }
+
+    function onWsClose() {
+        if (gameState && !gameState.isGameOver) {
+            showDcBanner('Lost connection to server. The game cannot continue.');
+        }
+    }
+
+    // ── Server message handler ────────────────────────────────────
+    function handleServerMsg(msg) {
+        switch(msg.type) {
+            case 'room_created':
+                myPlayerId   = msg.playerId;
+                myColorIndex = msg.colorIndex;
+                isHost       = true;
+                currentRoom  = msg.room;
+                showLobby(msg.room);
+                break;
+
+            case 'room_joined':
+                myPlayerId   = msg.playerId;
+                myColorIndex = msg.colorIndex;
+                isHost       = false;
+                currentRoom  = msg.room;
+                showLobby(msg.room);
+                break;
+
+            case 'player_joined':
+            case 'player_left':
+                currentRoom = msg.room;
+                updateLobbyUI(msg.room);
+                break;
+
+            case 'countdown':
+                currentRoom = msg.room || currentRoom;
+                showCountdown(msg.count);
+                break;
+
+            case 'countdown_cancelled':
+                currentRoom = msg.room;
+                hideCountdown();
+                updateLobbyUI(msg.room);
+                break;
+
+            case 'game_start':
+                hideCountdown();
+                beginGame(msg);
+                break;
+
+            case 'game_state':
+                // Non-host: receive and apply state from host
+                if (!isHost) applyRemoteState(msg.state);
+                break;
+
+            case 'player_action':
+                // Host: receive action from another player and process it
+                if (isHost) processRemoteAction(msg.playerId, msg.action);
+                break;
+
+            case 'game_over':
+                if (!isHost) showGameOver(msg.result);
+                break;
+
+            case 'player_disconnected':
+                handlePlayerDc(msg.playerId, msg.room);
+                break;
+
+            case 'promoted_to_host':
+                isHost = true;
+                document.getElementById('spectator-hint').style.display = 'none';
+                addEvent('You are now the host — game simulation continues on your device.', 'build');
+                break;
+
+            case 'error':
+                showMenuError(msg.message);
+                showLobbyError(msg.message);
+                break;
+        }
+    }
+
+    // ── Screens ───────────────────────────────────────────────────
+    function showScreen(id) {
+        ['loading-screen','menu-screen','lobby-screen'].forEach(s => {
+            document.getElementById(s).classList.toggle('hidden', s !== id);
+        });
+        document.getElementById('game-world').style.display = (id === 'game') ? 'block' : 'none';
+    }
+
+    function showMenuError(msg) {
+        const el = document.getElementById('menu-error');
+        if (el) { el.textContent = msg; setTimeout(() => { el.textContent = ''; }, 4000); }
+    }
+    function showLobbyError(msg) {
+        const el = document.getElementById('lobby-error');
+        if (el) { el.textContent = msg; setTimeout(() => { el.textContent = ''; }, 4000); }
+    }
+
+    // ── Lobby UI ──────────────────────────────────────────────────
+    function showLobby(room) {
+        showScreen('lobby-screen');
+        updateLobbyUI(room);
+    }
+
+    function updateLobbyUI(room) {
+        document.getElementById('lobby-room-code').textContent = room.code;
+        document.getElementById('lobby-count').textContent = room.playerCount;
+
+        const list = document.getElementById('lobby-player-list');
+        list.innerHTML = '';
+
+        const slots = 4;
+        for (let i = 0; i < slots; i++) {
+            const p = room.players[i];
+            const div = document.createElement('div');
+            div.className = 'player-slot' + (p ? '' : ' empty');
+            if (p) {
+                div.innerHTML = `
+                    <div class="player-dot" style="background:${PLAYER_COLORS[p.colorIndex]}"></div>
+                    <div class="player-slot-name">${escHtml(p.name)}</div>
+                    ${p.isHost ? '<div class="player-slot-badge">HOST</div>' : ''}
+                    ${p.id === myPlayerId ? '<div class="player-slot-badge" style="color:#aaa">YOU</div>' : ''}
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="player-dot" style="background:rgba(255,255,255,0.1)"></div>
+                    <div class="player-slot-name">Waiting…</div>
+                `;
+            }
+            list.appendChild(div);
+        }
+
+        const startBtn = document.getElementById('start-game-btn');
+        const hint = document.getElementById('lobby-hint');
+
+        if (isHost) {
+            startBtn.disabled = room.playerCount < 2;
+            startBtn.textContent = room.playerCount < 2 ? 'Start Game' : `Start Game (${room.playerCount} players)`;
+            hint.textContent = room.playerCount < 2 ? 'Waiting for players… (need at least 2)' : 'Ready to start!';
+        } else {
+            startBtn.disabled = true;
+            startBtn.textContent = 'Waiting for host…';
+            hint.textContent = 'The host will start the game.';
+        }
+    }
+
+    function showCountdown(count) {
+        document.getElementById('countdown-overlay').classList.remove('hidden');
+        document.getElementById('countdown-number').textContent = count;
+        // Only host can cancel
+        document.getElementById('cancel-start-btn').style.display = isHost ? '' : 'none';
+    }
+    function hideCountdown() {
+        document.getElementById('countdown-overlay').classList.add('hidden');
+    }
+
+    // ── Game state ────────────────────────────────────────────────
+    const config = window.gameConfig;
+    let gameState = null;
+    let mapCfg = null;
+    let mpPlayers = []; // array of { id, name, colorIndex, startPos }
+    let stateSync = null; // interval for host→clients broadcast
+
+    function createGameState(mapConfig_, players_) {
+        mapCfg = mapConfig_;
+        mpPlayers = players_;
+        resizeCanvas();
+
+        const territories = generateMap(mapCfg);
+        const players = {};
+        for (const p of players_) {
+            players[p.id] = {
+                id: p.id,
+                name: p.name,
+                colorIndex: p.colorIndex,
+                gold: config.settings.startingGold,
+                allies: [],
+                isHuman: true,
+                isAI: false,
+                connected: true
+            };
+        }
+        assignStartingTerritories(territories, players_, config);
+
+        return {
+            territories,
+            players,
+            attacks: [],
+            events: [],
+            selectedTerritory: null,
+            attackSource: null,
+            isPaused: false,
+            isGameOver: false,
+            gameResult: null,
+            timeRemaining: config.settings.gameDuration * 60,
+            showEvents: false,
+            lastUpdate: Date.now(),
+            resourceTimer: 0,
+            aiTimer: 0
+        };
+    }
+
+    function beginGame(msg) {
+        showScreen('game');
+        resizeCanvas();
+
+        gameState = createGameState(msg.mapConfig, msg.players);
+
+        // Show spectator hint for non-host
+        const hint = document.getElementById('spectator-hint');
+        const myNum = document.getElementById('spectator-player-num');
+        if (!isHost) {
+            hint.style.display = 'block';
+            if (myNum) myNum.textContent = myColorIndex + 1;
+        }
+
+        updatePlayersStrip();
+        addEvent('Game started! Conquer the world!', 'build');
+        cgGameplayStart();
+
+        // Host starts sim + broadcasts state
+        if (isHost) {
+            stateSync = setInterval(() => {
+                if (gameState && !gameState.isGameOver) {
+                    wsSend({ type: 'game_state', state: serializeState() });
+                }
+            }, 100); // ~10fps state sync
+        }
+
+        // Audio on first interaction
+        const startMusic = async () => {
+            initAudio();
+            if (audioContext.state === 'suspended') await audioContext.resume();
+            await decodeAllAudio();
+            playBgMusic();
+            document.removeEventListener('click', startMusic);
+            document.removeEventListener('touchstart', startMusic);
+        };
+        document.addEventListener('click', startMusic);
+        document.addEventListener('touchstart', startMusic);
+
+        gameState.lastUpdate = Date.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // ── State serialization (host → clients) ──────────────────────
+    function serializeState() {
+        return {
+            territories: gameState.territories.map(t => ({
+                id: t.id, owner: t.owner, troops: t.troops, buildings: t.buildings
+            })),
+            players: Object.fromEntries(
+                Object.entries(gameState.players).map(([id, p]) => [id, {
+                    gold: p.gold, allies: p.allies, connected: p.connected, isAI: p.isAI
+                }])
+            ),
+            attacks: gameState.attacks,
+            timeRemaining: gameState.timeRemaining,
+            isGameOver: gameState.isGameOver,
+            gameResult: gameState.gameResult,
+            events: gameState.events.slice(0, 5)
+        };
+    }
+
+    function applyRemoteState(state) {
+        if (!gameState) return;
+        // Patch only the data fields — keep local geometry
+        for (const ts of state.territories) {
+            const t = gameState.territories.find(x => x.id === ts.id);
+            if (t) { t.owner = ts.owner; t.troops = ts.troops; t.buildings = ts.buildings; }
+        }
+        for (const [id, ps] of Object.entries(state.players)) {
+            if (gameState.players[id]) {
+                gameState.players[id].gold = ps.gold;
+                gameState.players[id].allies = ps.allies;
+                gameState.players[id].connected = ps.connected;
+                gameState.players[id].isAI = ps.isAI;
+            }
+        }
+        gameState.attacks = state.attacks;
+        gameState.timeRemaining = state.timeRemaining;
+        if (state.isGameOver && !gameState.isGameOver) {
+            gameState.isGameOver = true;
+            gameState.gameResult = state.gameResult;
+            showGameOver(state.gameResult);
+        }
+        // Merge new events
+        for (const ev of (state.events || [])) {
+            if (!gameState.events.find(e => e.time === ev.time)) {
+                gameState.events.unshift(ev);
+            }
+        }
+        if (gameState.events.length > 20) gameState.events.length = 20;
+        updateEventPanel();
+    }
+
+    // ── Remote action handler (host only) ─────────────────────────
+    function processRemoteAction(fromPlayerId, action) {
+        if (!isHost || !gameState) return;
+        const player = gameState.players[fromPlayerId];
+        if (!player) return;
+
+        switch(action.type) {
+            case 'attack': {
+                const from = gameState.territories.find(t => t.id === action.fromId);
+                const to   = gameState.territories.find(t => t.id === action.toId);
+                if (from && to && from.owner === fromPlayerId && canAttack(from, to, fromPlayerId)) {
+                    launchAttack(from, to);
+                }
+                break;
+            }
+            case 'build_city': {
+                const t = gameState.territories.find(t => t.id === action.territoryId);
+                if (t && t.owner === fromPlayerId) buildCity(t, fromPlayerId);
+                break;
+            }
+            case 'build_defense': {
+                const t = gameState.territories.find(t => t.id === action.territoryId);
+                if (t && t.owner === fromPlayerId) buildDefense(t, fromPlayerId);
+                break;
+            }
+            case 'alliance': {
+                const t = gameState.territories.find(t => t.id === action.territoryId);
+                if (t) requestAlliance(t, fromPlayerId);
+                break;
+            }
+        }
+    }
+
+    // ── Map generation ────────────────────────────────────────────
+    const TERRITORY_NAMES = [
+        'Northland','Eastmark','Westhold','Southgate','Ironpeak','Goldvale',
+        'Silverlake','Bronzehill','Stormwatch','Sunridge','Moonhaven','Starfall',
+        'Frostheim','Flamekeep','Windmere','Stoneguard','Shadowfen','Brightwood',
+        'Darkhollow','Clearwater'
+    ];
+
+    function generateMap({ cols, rows }) {
+        const territories = [];
+        const topPad = 96, botPad = 72, sidePad = 8;
+        const cw = (canvas.width  - sidePad * 2) / cols;
+        const ch = (canvas.height - topPad - botPad) / rows;
+        let id = 0;
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const bx = sidePad + col * cw, by = topPad + row * ch;
+                const jit = Math.min(cw, ch) * 0.08;
+                const vertices = [
+                    { x: bx + jit + Math.random()*jit,    y: by + jit + Math.random()*jit },
+                    { x: bx + cw - jit - Math.random()*jit, y: by + jit + Math.random()*jit },
+                    { x: bx + cw - jit - Math.random()*jit, y: by + ch - jit - Math.random()*jit },
+                    { x: bx + jit + Math.random()*jit,    y: by + ch - jit - Math.random()*jit }
+                ];
+                territories.push({
+                    id, name: TERRITORY_NAMES[id] || `T${id}`,
+                    center: { x: bx + cw/2, y: by + ch/2 },
+                    vertices, neighbors: [],
+                    owner: 'neutral', troops: config.settings.initialTroops, buildings: [],
+                    row, col
+                });
+                id++;
+            }
+        }
+        for (const t of territories) {
+            for (const o of territories) {
+                if (o.id === t.id) continue;
+                const dr = Math.abs(o.row-t.row), dc = Math.abs(o.col-t.col);
+                if ((dr===1&&dc===0)||(dr===0&&dc===1)) t.neighbors.push(o.id);
+            }
+        }
+        return territories;
+    }
+
+    function assignStartingTerritories(territories, players_, cfg_) {
+        const startPositions = [
+            { row: 0, col: 0 },
+            { row: mapCfg.rows-1, col: mapCfg.cols-1 },
+            { row: 0, col: mapCfg.cols-1 },
+            { row: mapCfg.rows-1, col: 0 }
+        ];
+        players_.forEach((p, i) => {
+            const sp = startPositions[i];
+            const start = territories.find(t => t.row === sp.row && t.col === sp.col);
+            if (!start) return;
+            start.owner  = p.id;
+            start.troops = config.settings.initialTroops * 2;
+            let assigned = 1;
+            for (const nid of start.neighbors) {
+                if (assigned >= config.settings.startingTerritories) break;
+                const n = territories.find(t => t.id === nid);
+                if (n && n.owner === 'neutral') { n.owner = p.id; n.troops = config.settings.initialTroops; assigned++; }
+            }
+        });
+    }
+
+    // ── Game logic helpers ────────────────────────────────────────
+    function getPlayerTerritories(pid) { return gameState.territories.filter(t => t.owner === pid); }
+    function getPlayerTroops(pid) { return getPlayerTerritories(pid).reduce((s,t)=>s+t.troops,0); }
+    function getMapControlPct(pid) {
+        return Math.round(getPlayerTerritories(pid).length / gameState.territories.length * 100);
+    }
+    function myPlayerId_() { return myPlayerId; }
+
+    function canAttack(from, to, ownerId) {
+        if (!from||!to) return false;
+        if (from.owner !== ownerId) return false;
+        if (to.owner === ownerId) return false;
+        if (!from.neighbors.includes(to.id)) return false;
+        if (from.troops <= 1) return false;
+        if (gameState.players[ownerId]?.allies.includes(to.owner)) return false;
+        return true;
+    }
+    function canBuildCity(t, ownerId) {
+        return t && t.owner===ownerId && !t.buildings.includes('city') &&
+               gameState.players[ownerId].gold >= config.buildings.cityCost;
+    }
+    function canBuildDefense(t, ownerId) {
+        return t && t.owner===ownerId && !t.buildings.includes('defense') &&
+               gameState.players[ownerId].gold >= config.buildings.defenseCost;
+    }
+    function canRequestAlliance(t, ownerId) {
+        if (!t) return false;
+        if (t.owner===ownerId||t.owner==='neutral') return false;
+        return !gameState.players[ownerId].allies.includes(t.owner);
+    }
+    function myPlayer() { return gameState?.players[myPlayerId]; }
+
+    function launchAttack(from, to) {
+        const troops = Math.floor(from.troops * (config.combat.attackRatio/100));
+        if (troops < 1) return;
+        from.troops -= troops;
+        gameState.attacks.push({
+            from: from.id, to: to.id, troops, progress: 0, owner: from.owner,
+            speed: config.combat.troopSpeed==='fast'?0.02:config.combat.troopSpeed==='slow'?0.005:0.01
+        });
+        addEvent(`${playerDisplayName(from.owner)} attacked ${to.name} (${troops} troops)`, 'attack');
+        playSound('attack_sound', 0.4);
+    }
+
+    function buildCity(t, ownerId) {
+        if (!canBuildCity(t, ownerId)) return;
+        gameState.players[ownerId].gold -= config.buildings.cityCost;
+        t.buildings.push('city');
+        addEvent(`City built in ${t.name}`, 'build');
+        playSound('build_sound', 0.5);
+    }
+    function buildDefense(t, ownerId) {
+        if (!canBuildDefense(t, ownerId)) return;
+        gameState.players[ownerId].gold -= config.buildings.defenseCost;
+        t.buildings.push('defense');
+        addEvent(`Defense Post in ${t.name}`, 'build');
+        playSound('build_sound', 0.5);
+    }
+    function requestAlliance(t, ownerId) {
+        if (!canRequestAlliance(t, ownerId)) return;
+        const target = t.owner;
+        const chance = config.ai.allianceWillingness==='high'?0.7:config.ai.allianceWillingness==='low'?0.2:0.4;
+        if (Math.random() < chance) {
+            gameState.players[ownerId].allies.push(target);
+            if (gameState.players[target]) gameState.players[target].allies.push(ownerId);
+            addEvent(`Alliance formed between ${playerDisplayName(ownerId)} and ${playerDisplayName(target)}!`, 'alliance');
+            playSound('alliance_formed_sound', 0.5);
+        } else {
+            addEvent(`${playerDisplayName(target)} declined alliance`, 'alliance');
+        }
+    }
+
+    function playerDisplayName(pid) {
+        return gameState.players[pid]?.name || pid;
+    }
+
+    function processAttacks(dt) {
+        const done = [];
+        for (const a of gameState.attacks) {
+            a.progress += a.speed * dt * 60;
+            if (a.progress >= 1) done.push(a);
+        }
+        for (const a of done) {
+            resolveAttack(a);
+            gameState.attacks = gameState.attacks.filter(x => x !== a);
+        }
+    }
+
+    function resolveAttack(attack) {
+        const to = gameState.territories.find(t => t.id === attack.to);
+        if (!to) return;
+        let ap = attack.troops;
+        let dp = to.troops;
+        if (to.buildings.includes('defense')) dp *= (1 + config.combat.defenseBonus/100);
+        const al = Math.ceil(ap * (config.combat.attackLoss/100));
+        const dl = Math.ceil(dp * 0.3);
+        if (ap-al > dp-dl) {
+            const prev = to.owner;
+            to.owner = attack.owner;
+            to.troops = Math.max(1, Math.floor(ap-al-(dp-dl)));
+            to.buildings = [];
+            addEvent(`${playerDisplayName(attack.owner)} conquered ${to.name}!`, 'attack');
+            if (prev !== 'neutral' && getPlayerTerritories(prev).length === 0) {
+                addEvent(`${playerDisplayName(prev)} eliminated!`, 'attack');
+            }
+        } else {
+            to.troops = Math.max(1, Math.floor(dp-dl));
+            addEvent(`Attack on ${to.name} repelled!`, 'attack');
+        }
+        checkVictory();
+    }
+
+    function generateResources(dt) {
+        gameState.resourceTimer += dt;
+        const interval = config.settings.resourceRate==='fast'?2:config.settings.resourceRate==='slow'?6:4;
+        if (gameState.resourceTimer >= interval) {
+            gameState.resourceTimer = 0;
+            for (const [pid, player] of Object.entries(gameState.players)) {
+                for (const t of getPlayerTerritories(pid)) {
+                    let tg = 1, gg = 10;
+                    if (t.buildings.includes('city')) { tg += 2; gg += 20; }
+                    t.troops += tg;
+                    player.gold += gg;
+                }
+            }
+        }
+    }
+
+    function updateAI(dt) {
+        gameState.aiTimer += dt;
+        const interval = config.ai.aggression==='aggressive'?3:config.ai.aggression==='passive'?8:5;
+        if (gameState.aiTimer < interval) return;
+        gameState.aiTimer = 0;
+
+        for (const [pid, player] of Object.entries(gameState.players)) {
+            if (!player.isAI) continue;
+            const territories = getPlayerTerritories(pid);
+            if (!territories.length) continue;
+            const action = Math.random();
+            if (action < 0.6) {
+                const opts = [];
+                for (const t of territories) {
+                    if (t.troops > 10) {
+                        for (const nid of t.neighbors) {
+                            const n = gameState.territories.find(x => x.id===nid);
+                            if (n && n.owner!==pid && !player.allies.includes(n.owner)) opts.push({from:t,to:n});
+                        }
+                    }
+                }
+                if (opts.length) {
+                    const pick = opts[Math.floor(Math.random()*opts.length)];
+                    launchAttack(pick.from, pick.to);
+                }
+            } else if (action < 0.8) {
+                const build = territories.filter(t => !t.buildings.includes('city') && player.gold >= config.buildings.cityCost);
+                if (build.length) {
+                    const t = build[Math.floor(Math.random()*build.length)];
+                    player.gold -= config.buildings.cityCost;
+                    t.buildings.push('city');
+                }
+            }
+        }
+    }
+
+    function checkVictory() {
+        if (gameState.isGameOver) return;
+        const myPct = getMapControlPct(myPlayerId);
+        for (const [pid] of Object.entries(gameState.players)) {
+            if (getMapControlPct(pid) >= config.settings.victoryThreshold) {
+                gameState.isGameOver = true;
+                gameState.gameResult = pid === myPlayerId ? 'victory' : 'defeat';
+                showGameOver(gameState.gameResult);
+                if (isHost) wsSend({ type: 'game_over', result: gameState.gameResult });
+                return;
+            }
+        }
+        if (getPlayerTerritories(myPlayerId).length === 0) {
+            gameState.isGameOver = true;
+            gameState.gameResult = 'defeat';
+            showGameOver('defeat');
+            if (isHost) wsSend({ type: 'game_over', result: 'defeat' });
+        }
+    }
+
+    function showGameOver(result) {
+        cgGameplayStop();
+        stopBgMusic();
+        clearInterval(stateSync);
+
+        const overlay  = document.getElementById('game-over-overlay');
+        const title    = document.getElementById('game-over-title');
+        const subtitle = document.getElementById('game-over-subtitle');
+        const scores   = document.getElementById('game-over-scores');
+
+        title.textContent = result === 'victory' ? 'VICTORY!' : 'DEFEAT';
+        title.className   = 'game-over-title' + (result === 'defeat' ? ' defeat' : '');
+        subtitle.textContent = result === 'victory'
+            ? `You conquered ${getMapControlPct(myPlayerId)}% of the world!`
+            : 'Better luck next time…';
+
+        // Score board
+        scores.innerHTML = '';
+        const sorted = Object.values(gameState.players)
+            .map(p => ({ ...p, pct: getMapControlPct(p.id) }))
+            .sort((a,b) => b.pct - a.pct);
+        for (const p of sorted) {
+            const row = document.createElement('div');
+            row.className = 'score-row';
+            row.innerHTML = `
+                <div class="score-dot" style="background:${PLAYER_COLORS[p.colorIndex]}"></div>
+                <div class="score-name">${escHtml(p.name)}${p.id===myPlayerId?' (You)':''}</div>
+                <div class="score-pct">${p.pct}%</div>
+            `;
+            scores.appendChild(row);
+        }
+
+        playSound(result==='victory'?'victory_sound':'defeat_sound', 0.6);
+        overlay.classList.add('visible');
+        cgMidgameAd();
+
+        // Submit score
+        if (result === 'victory') {
+            try { lib.addPlayerScoreToLeaderboard(getMapControlPct(myPlayerId)); } catch(e) {}
+        }
+    }
+
+    function handlePlayerDc(playerId, room) {
+        if (!gameState) return;
+        const player = gameState.players[playerId];
+        if (!player) return;
+        player.connected = false;
+        player.isAI = true; // Host AI-takes-over
+        const text = `${player.name} disconnected — territory is now AI-controlled.`;
+        addEvent(text, 'attack');
+        showDcBanner(text);
+        updatePlayersStrip();
+    }
+
+    function showDcBanner(text) {
+        const el = document.getElementById('dc-banner');
+        const txt = document.getElementById('dc-banner-text');
+        if (txt) txt.textContent = text;
+        el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 5000);
+    }
+
+    // ── Game reset ────────────────────────────────────────────────
+    function resetGame() {
+        document.getElementById('game-over-overlay').classList.remove('visible');
+        document.getElementById('event-panel').classList.remove('visible');
+        document.getElementById('events-btn').classList.remove('active');
+        document.getElementById('pause-btn').textContent = 'Pause';
+        document.getElementById('pause-btn').classList.remove('active');
+        clearInterval(stateSync);
+        // Go back to menu
+        showScreen('menu-screen');
+    }
+
+    // ── UI updates ────────────────────────────────────────────────
+    function updateUI() {
+        if (!gameState || !myPlayer()) return;
+        document.getElementById('territory-count').textContent = getPlayerTerritories(myPlayerId).length;
+        document.getElementById('troop-count').textContent = getPlayerTroops(myPlayerId);
+        document.getElementById('gold-count').textContent = Math.floor(myPlayer().gold || 0);
+        document.getElementById('map-control').textContent = `${getMapControlPct(myPlayerId)}%`;
+        const m = Math.floor(gameState.timeRemaining/60);
+        const s = Math.floor(gameState.timeRemaining%60);
+        document.getElementById('game-timer').textContent =
+            `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function updatePlayersStrip() {
+        if (!gameState) return;
+        const strip = document.getElementById('players-strip');
+        strip.innerHTML = '';
+        for (const p of Object.values(gameState.players)) {
+            const chip = document.createElement('div');
+            chip.className = 'player-chip' + (p.connected===false?' disconnected':'');
+            chip.style.borderLeftColor = PLAYER_COLORS[p.colorIndex];
+            chip.innerHTML = `
+                <span style="font-size:11px;color:${PLAYER_COLORS[p.colorIndex]}">${escHtml(p.name)}</span>
+                <span style="font-size:11px;color:var(--text-secondary)">${getMapControlPct(p.id)}%</span>
+                ${p.isAI?'<span style="font-size:10px;color:#aaa">[AI]</span>':''}
+            `;
+            strip.appendChild(chip);
+        }
+    }
+
+    function updateEventPanel() {
+        const list = document.getElementById('event-list');
+        list.innerHTML = '';
+        for (const ev of gameState.events.slice(0,10)) {
+            const d = document.createElement('div');
+            d.className = `event-item ${ev.type}`;
+            d.textContent = ev.message;
+            list.appendChild(d);
+        }
+    }
+
+    function addEvent(msg, type) {
+        if (!gameState) return;
+        gameState.events.unshift({ message: msg, type, time: Date.now() });
+        if (gameState.events.length > 20) gameState.events.pop();
+        updateEventPanel();
+    }
+
+    // ── Radial menu ───────────────────────────────────────────────
+    function showRadialMenu(territory, x, y) {
+        const menu = document.getElementById('radial-menu');
+        const mx = Math.min(Math.max(x,150), canvas.width-150);
+        const my = Math.min(Math.max(y,150), canvas.height-150);
+        menu.style.left = `${mx}px`; menu.style.top = `${my}px`;
+        document.getElementById('radial-troops').textContent = territory.troops;
+
+        const mine = territory.owner === myPlayerId;
+        const atkOk = gameState.attackSource && canAttack(gameState.attackSource, territory, myPlayerId);
+        document.getElementById('radial-attack').classList.toggle('disabled', !atkOk);
+        document.getElementById('radial-build').classList.toggle('disabled', !canBuildCity(territory, myPlayerId));
+        document.getElementById('radial-defense').classList.toggle('disabled', !canBuildDefense(territory, myPlayerId));
+        document.getElementById('radial-alliance').classList.toggle('disabled', !canRequestAlliance(territory, myPlayerId));
+        document.getElementById('radial-send').classList.remove('disabled'); // show always, validated on action
+
+        menu.classList.add('visible');
+        playSound('ui_click_sound', 0.3);
+    }
+    function hideRadialMenu() { document.getElementById('radial-menu').classList.remove('visible'); }
+
+    // ── Tooltip ───────────────────────────────────────────────────
+    function showTooltip(t, x, y) {
+        const tip = document.getElementById('territory-tooltip');
+        const ownerP = gameState.players[t.owner];
+        document.getElementById('tooltip-name').textContent = t.name;
+        document.getElementById('tooltip-owner').textContent = `Owner: ${ownerP ? ownerP.name : 'Neutral'}`;
+        document.getElementById('tooltip-troops').textContent = t.troops;
+        document.getElementById('tooltip-buildings').textContent = t.buildings.length;
+        tip.style.left = `${Math.min(x+10, canvas.width-160)}px`;
+        tip.style.top  = `${Math.min(y+10, canvas.height-90)}px`;
+        tip.classList.add('visible');
+    }
+    function hideTooltip() { document.getElementById('territory-tooltip').classList.remove('visible'); }
+
+    // ── Rendering ──────────────────────────────────────────────────
+    function render() {
+        if (!gameState) return;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        if (assetCache.images.world_map_background) {
+            const img = assetCache.images.world_map_background;
+            const scale = Math.max(canvas.width/img.width, canvas.height/img.height);
+            ctx.drawImage(img, (canvas.width-img.width*scale)/2, (canvas.height-img.height*scale)/2, img.width*scale, img.height*scale);
+        } else {
+            ctx.fillStyle='#1565C0'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+
+        for (const t of gameState.territories) drawTerritory(t);
+        for (const a of gameState.attacks) drawAttack(a);
+        if (gameState.selectedTerritory) drawHighlight(gameState.selectedTerritory, '#FFD700', 4, [10,5]);
+        if (gameState.attackSource) drawHighlight(gameState.attackSource, '#FF5722', 5, []);
+    }
+
+    function drawTerritory(t) {
+        const { vertices, owner, troops, buildings, center } = t;
+        const color = owner === 'neutral' ? '#BDBDBD' : PLAYER_COLORS[gameState.players[owner]?.colorIndex ?? 4];
+
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        for (let i=1;i<vertices.length;i++) ctx.lineTo(vertices[i].x, vertices[i].y);
+        ctx.closePath();
+        ctx.fillStyle = color; ctx.globalAlpha = 0.72; ctx.fill(); ctx.globalAlpha = 1;
+        ctx.strokeStyle = shadeColor(color,-30); ctx.lineWidth = 3; ctx.stroke();
+
+        let bo = 0;
+        for (const b of buildings) {
+            const icon = b==='city'?assetCache.images.city_icon:assetCache.images.defense_post_icon;
+            if (icon) { ctx.drawImage(icon, center.x-16+bo, center.y-28, 28, 28); bo+=18; }
+        }
+
+        ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(0,0,0,0.55)'; ctx.shadowBlur=4;
+        ctx.font='bold 18px Oswald,sans-serif';
+        ctx.fillText(troops.toString(), center.x, center.y+8);
+        ctx.font='11px Inter,sans-serif';
+        ctx.fillText(t.name, center.x, center.y+26);
+        ctx.shadowBlur=0;
+    }
+
+    function drawHighlight(t, color, lw, dash) {
+        ctx.beginPath();
+        ctx.moveTo(t.vertices[0].x, t.vertices[0].y);
+        for (let i=1;i<t.vertices.length;i++) ctx.lineTo(t.vertices[i].x, t.vertices[i].y);
+        ctx.closePath();
+        ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash(dash); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    function drawAttack(a) {
+        const from = gameState.territories.find(t=>t.id===a.from);
+        const to   = gameState.territories.find(t=>t.id===a.to);
+        if (!from||!to) return;
+        const cx = from.center.x + (to.center.x-from.center.x)*a.progress;
+        const cy = from.center.y + (to.center.y-from.center.y)*a.progress;
+        const color = PLAYER_COLORS[gameState.players[a.owner]?.colorIndex ?? 0];
+
+        ctx.beginPath(); ctx.moveTo(from.center.x,from.center.y); ctx.lineTo(cx,cy);
+        ctx.strokeStyle=color; ctx.lineWidth=3; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+
+        if (assetCache.images.troop_icon) {
+            ctx.drawImage(assetCache.images.troop_icon, cx-12, cy-12, 24, 24);
+        } else {
+            ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+        }
+        ctx.fillStyle='#fff'; ctx.font='bold 13px Oswald,sans-serif'; ctx.textAlign='center';
+        ctx.fillText(a.troops.toString(), cx, cy-16);
+    }
+
+    function shadeColor(color, pct) {
+        const n = parseInt(color.replace('#',''),16), a = Math.round(2.55*pct);
+        const R=(n>>16)+a, G=(n>>8&0xFF)+a, B=(n&0xFF)+a;
+        return '#'+(0x1000000+(R<255?R<1?0:R:255)*0x10000+(G<255?G<1?0:G:255)*0x100+(B<255?B<1?0:B:255)).toString(16).slice(1);
+    }
+
+    // ── Input ─────────────────────────────────────────────────────
+    function getTerritoryAt(x,y) {
+        for (const t of gameState.territories) if (pointInPoly(x,y,t.vertices)) return t;
+        return null;
+    }
+    function pointInPoly(x,y,vs) {
+        let inside=false;
+        for (let i=0,j=vs.length-1;i<vs.length;j=i++) {
+            const xi=vs[i].x,yi=vs[i].y,xj=vs[j].x,yj=vs[j].y;
+            if (((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+        }
+        return inside;
+    }
+
+    // Dispatch an action — if host, do it directly; if client, send to server
+    function dispatchAction(action) {
+        if (isHost) {
+            processRemoteAction(myPlayerId, action);
+        } else {
+            wsSend({ type: 'player_action', action });
+        }
+    }
+
+    function handleTerritoryClick(t, x, y) {
+        if (!gameState || gameState.isGameOver || gameState.isPaused) return;
+        playSound('ui_click_sound', 0.2);
+
+        if (gameState.attackSource && t.owner !== myPlayerId) {
+            if (canAttack(gameState.attackSource, t, myPlayerId)) {
+                dispatchAction({ type: 'attack', fromId: gameState.attackSource.id, toId: t.id });
+                if (isHost) { /* already processed */ } 
+                gameState.attackSource = null; hideRadialMenu(); return;
+            }
+        }
+        gameState.selectedTerritory = t;
+        if (t.owner === myPlayerId) gameState.attackSource = t;
+        showRadialMenu(t, x, y);
+    }
+
+    canvas.addEventListener('click', e => {
+        const r = canvas.getBoundingClientRect();
+        const x = e.clientX-r.left, y = e.clientY-r.top;
+        const t = getTerritoryAt(x,y);
+        if (t) handleTerritoryClick(t,x,y);
+        else { gameState.selectedTerritory=null; gameState.attackSource=null; hideRadialMenu(); }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        if (!gameState) return;
+        const r = canvas.getBoundingClientRect();
+        const t = getTerritoryAt(e.clientX-r.left, e.clientY-r.top);
+        if (t) { showTooltip(t, e.clientX-r.left, e.clientY-r.top); canvas.style.cursor='pointer'; }
+        else { hideTooltip(); canvas.style.cursor='default'; }
+    });
+    canvas.addEventListener('mouseleave', hideTooltip);
+
+    let touchPos = null;
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const r = canvas.getBoundingClientRect();
+        touchPos = { x: e.touches[0].clientX-r.left, y: e.touches[0].clientY-r.top };
+    });
+    canvas.addEventListener('touchend', e => {
+        e.preventDefault();
+        if (!touchPos||!gameState) return;
+        const t = getTerritoryAt(touchPos.x, touchPos.y);
+        if (t) handleTerritoryClick(t, touchPos.x, touchPos.y);
+        else { gameState.selectedTerritory=null; gameState.attackSource=null; hideRadialMenu(); }
+        touchPos=null;
+    });
+
+    // Radial buttons
+    document.getElementById('radial-attack').addEventListener('click', () => {
+        if (!gameState.selectedTerritory||!gameState.attackSource) return hideRadialMenu();
+        dispatchAction({ type:'attack', fromId:gameState.attackSource.id, toId:gameState.selectedTerritory.id });
+        gameState.attackSource=null; hideRadialMenu();
+    });
+    document.getElementById('radial-build').addEventListener('click', () => {
+        if (gameState.selectedTerritory) dispatchAction({ type:'build_city', territoryId:gameState.selectedTerritory.id });
+        hideRadialMenu();
+    });
+    document.getElementById('radial-defense').addEventListener('click', () => {
+        if (gameState.selectedTerritory) dispatchAction({ type:'build_defense', territoryId:gameState.selectedTerritory.id });
+        hideRadialMenu();
+    });
+    document.getElementById('radial-alliance').addEventListener('click', () => {
+        if (gameState.selectedTerritory) dispatchAction({ type:'alliance', territoryId:gameState.selectedTerritory.id });
+        hideRadialMenu();
+    });
+    document.getElementById('radial-send').addEventListener('click', hideRadialMenu);
+    document.getElementById('radial-cancel').addEventListener('click', () => { gameState.attackSource=null; hideRadialMenu(); });
+
+    document.getElementById('events-btn').addEventListener('click', () => {
+        gameState.showEvents = !gameState.showEvents;
+        document.getElementById('event-panel').classList.toggle('visible', gameState.showEvents);
+        document.getElementById('events-btn').classList.toggle('active', gameState.showEvents);
+    });
+    document.getElementById('pause-btn').addEventListener('click', () => {
+        if (!isHost) return; // only host can pause
+        gameState.isPaused = !gameState.isPaused;
+        document.getElementById('pause-btn').textContent = gameState.isPaused?'Resume':'Pause';
+        document.getElementById('pause-btn').classList.toggle('active', gameState.isPaused);
+    });
+    document.getElementById('restart-btn').addEventListener('click', resetGame);
+    document.getElementById('gameover-restart-btn').addEventListener('click', resetGame);
+
+    document.addEventListener('keydown', e => {
+        if (!gameState) return;
+        if (e.key==='Escape') { gameState.selectedTerritory=null; gameState.attackSource=null; hideRadialMenu(); }
+        if (e.key===' '&&isHost) { e.preventDefault(); gameState.isPaused=!gameState.isPaused; }
+    });
+
+    // ── Game loop ─────────────────────────────────────────────────
+    function gameLoop() {
+        if (!gameState) { requestAnimationFrame(gameLoop); return; }
+        const now = Date.now();
+        const dt = Math.min((now - gameState.lastUpdate)/1000, 0.11);
+        gameState.lastUpdate = now;
+
+        // Only host runs simulation
+        if (isHost && !gameState.isPaused && !gameState.isGameOver) {
+            gameState.timeRemaining -= dt;
+            if (gameState.timeRemaining <= 0) {
+                gameState.timeRemaining = 0;
+                gameState.isGameOver = true;
+                gameState.gameResult = 'defeat';
+                showGameOver('defeat');
+                wsSend({ type:'game_over', result:'defeat' });
+            }
+            processAttacks(dt);
+            generateResources(dt);
+            updateAI(dt);
+            checkVictory();
+        }
+
+        render();
+        updateUI();
+        updatePlayersStrip();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // ── Lobby event handlers ──────────────────────────────────────
+    document.getElementById('create-room-btn').addEventListener('click', async () => {
+        playerName = document.getElementById('player-name-input').value.trim() || 'Player';
+        try {
+            await connectWS();
+            wsSend({ type:'create_room', playerName });
+        } catch(e) { showMenuError('Could not connect to server. Is it running?'); }
+    });
+
+    document.getElementById('join-room-btn').addEventListener('click', async () => {
+        const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+        if (code.length !== 5) { showMenuError('Enter a 5-character room code.'); return; }
+        playerName = document.getElementById('player-name-input').value.trim() || 'Player';
+        try {
+            await connectWS();
+            wsSend({ type:'join_room', roomCode:code, playerName });
+        } catch(e) { showMenuError('Could not connect to server. Is it running?'); }
+    });
+
+    document.getElementById('quick-match-btn').addEventListener('click', () => {
+        showMenuError('Quick match coming soon — use a room code for now.');
+    });
+
+    document.getElementById('leave-lobby-btn').addEventListener('click', () => {
+        if (ws) ws.close();
+        showScreen('menu-screen');
+    });
+
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        wsSend({ type:'start_game' });
+    });
+
+    document.getElementById('cancel-start-btn').addEventListener('click', () => {
+        wsSend({ type:'cancel_start' });
+    });
+
+    document.getElementById('copy-link-btn').addEventListener('click', () => {
+        const code = document.getElementById('lobby-room-code').textContent;
+        const link = getInviteLink(code);
+        navigator.clipboard.writeText(link).then(() => {
+            document.getElementById('copy-link-btn').textContent = '✅ Copied!';
+            setTimeout(() => { document.getElementById('copy-link-btn').textContent = '📋 Copy Invite Link'; }, 2000);
+        });
+    });
+
+    // ── Game parameters ───────────────────────────────────────────
+    lib.showGameParameters({
+        name:'Game Settings',
+        params:{
+            'Game Duration (min)':{ key:'settings.gameDuration', type:'dropdown',
+                options:[{label:'10 minutes',value:10},{label:'15 minutes',value:15},{label:'20 minutes',value:20}]},
+            'Victory Threshold':{ key:'settings.victoryThreshold', type:'dropdown',
+                options:[{label:'60%',value:60},{label:'72%',value:72},{label:'85%',value:85}]},
+            'Starting Gold':{ key:'settings.startingGold', type:'slider', min:1000, max:5000, step:500 },
+            'Initial Troops':{ key:'settings.initialTroops', type:'slider', min:50, max:200, step:25 },
+            'Resource Rate':{ key:'settings.resourceRate', type:'dropdown',
+                options:[{label:'Slow',value:'slow'},{label:'Normal',value:'normal'},{label:'Fast',value:'fast'}]},
+            'AI Aggression':{ key:'ai.aggression', type:'dropdown',
+                options:[{label:'Passive',value:'passive'},{label:'Balanced',value:'balanced'},{label:'Aggressive',value:'aggressive'}]},
+            'City Cost':{ key:'buildings.cityCost', type:'slider', min:200, max:1000, step:100 },
+            'Defense Cost':{ key:'buildings.defenseCost', type:'slider', min:100, max:500, step:50 }
+        }
+    });
+
+    // ── Utility ───────────────────────────────────────────────────
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────
+    async function boot() {
+        setLoadProgress(0,'Loading assets…');
+        await preloadAssets();
+        setLoadProgress(100,'Ready!');
+        document.getElementById('loading-screen').classList.add('hidden');
+        showScreen('menu-screen');
+
+        // Auto-join if launched via invite link
+        const inviteCode = getInviteRoomCode();
+        if (inviteCode) {
+            document.getElementById('room-code-input').value = inviteCode;
+            playerName = `Player ${Math.floor(Math.random()*100)}`;
+            document.getElementById('player-name-input').value = playerName;
+            try {
+                await connectWS();
+                wsSend({ type:'join_room', roomCode:inviteCode, playerName });
+            } catch(e) { showMenuError('Could not connect to server.'); }
+        }
+    }
+
+    boot();
+}
+</script>
+</body>
+</html>
